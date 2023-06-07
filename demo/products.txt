@@ -1,0 +1,3 @@
+product add PROD     -n "Octocar V4"
+product add PROD-100 -p PROD -n "Car"
+product add PROD-200 -p PROD -n "Communication"
