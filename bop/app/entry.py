@@ -3,9 +3,6 @@ import os
 
 import cmd2.exceptions
 
-from bop.app.edit.products import *
-
-
 from .interactive import Interactive
 from .env import AppEnv
 from bop.db import DB
