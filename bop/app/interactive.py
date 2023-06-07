@@ -5,6 +5,7 @@ from cmd2 import CommandSet, with_argparser, with_category, with_default_categor
 # Required to register the apps
 from .edit import AppRequirement
 from .edit import AppProduct
+from .edit import AppConstraint
 
 from bop.gui.window import BopMainWindow
 from .env import AppEnv
@@ -33,6 +34,16 @@ class Interactive(cmd2.Cmd):
 	def do_product(self, ns: argparse.Namespace):
 		"""Manage products."""
 		self._default_subcommand_stub("product",ns)
+
+
+	constr_parser = cmd2.Cmd2ArgumentParser()
+	constr_subparser = constr_parser.add_subparsers(title='action', help='available actions')
+
+	@with_argparser(constr_parser)
+	def do_constraint(self, ns: argparse.Namespace):
+		"""Manage products."""
+		self._default_subcommand_stub("constraint",ns)
+
 
 	def do_gui(self,_):
 		"""Start the GUI"""

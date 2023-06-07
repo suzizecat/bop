@@ -19,8 +19,25 @@ class Constraint(BaseIdentifiedRecord):
 	def __init__(self, code = None, name = None, descr = None):
 		super().__init__(code,name,descr)
 
+		self._products = list()
+
 	def to_sql_dict(self):
 		return {"id" : self.id,
 				"code" :self.code,
 				"name" :self.name,
 				"descr":self.descr}
+
+	def bind_to_product(self, prod):
+		if prod not in self._products :
+			self._products.append(prod)
+			prod.bind_to_constraint(self)
+
+	def unbind_product(self,prod):
+		if prod in self._products :
+			self._products.remove(prod)
+			prod.unbind_constraint(self)
+
+	def unbind_all(self):
+		while len(self._products) > 0 :
+			prod = self._products.pop()
+			prod.unbind_constraint(self)

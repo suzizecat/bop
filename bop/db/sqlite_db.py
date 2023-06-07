@@ -269,6 +269,30 @@ class DB:
 			for row in results:
 				self.add_constraint(Constraint.from_sql_row(row))
 
+
+	def get_constraint_by_code(self, code) -> Constraint:
+			for constr in self._constraints.values():
+				if constr.code == code:
+					return constr
+			raise KeyError(f"No constraint found with code {code}")
+	def remove_constraint(self, constraint : T.Union[Constraint, str, int]):
+		if isinstance(constraint, str):
+			constraint = self.get_constraint_by_code(constraint)
+			self.remove_constraint(constraint.id)
+		elif isinstance(constraint, Product) :
+			if constraint.id is not None :
+				self.remove_constraint(constraint.id)
+			else :
+				self.remove_constraint(constraint.code)
+		elif isinstance(constraint, int) :
+			constraint = self._constraints[constraint]
+			constraint.unbind_all()
+			with self as sql :
+				sql.execute("DELETE FROM t_constraint WHERE id=?", (constraint.id,))
+				self._constraints.pop(constraint.id)
+		else :
+			raise TypeError(f"Try to remove an invalid element")
+
 	def add_constraint(self, constr : Constraint, ignore_duplicate = False):
 		if constr.id in self._constraints :
 			raise KeyError(f"Cannot override constraint with same ID {constr.id}")
@@ -295,7 +319,7 @@ class DB:
 		with self as sql:
 			results = sql.execute("SELECT * FROM t_cstr_prod")
 			for row in results:
-				self._products[row[1]].add_constraint(self._constraints[row[2]])
+				self._products[row[1]].bind_to_constraint(self._constraints[row[2]])
 
 	def save_product_constraints_bindings(self):
 		to_create = list()

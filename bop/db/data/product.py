@@ -38,6 +38,12 @@ class Product(BaseIdentifiedHierarchicalRecord):
 
 		return ret
 
-	def add_constraint(self,constr : Constraint):
+	def bind_to_constraint(self,constr : Constraint):
 		if constr not in self.constraints :
 			self.constraints.append(constr)
+			constr.bind_to_product(self)
+
+	def unbind_constraint(self,constr : Constraint):
+		if constr in self.constraints :
+			self.constraints.remove(constr)
+			constr.unbind_product(self)
