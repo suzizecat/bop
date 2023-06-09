@@ -1,3 +1,3 @@
-product add PROD     -n "Octocar V4"
-product add * -p PROD -n "Car"
-product add * -p PROD -n "Communication"
+add product "PROD" -f -n "Octocar V4"
+add product "PROD-0" -f -n "Car" -p "PROD"
+add product "PROD-1" -f -n "Communication" -p "PROD"

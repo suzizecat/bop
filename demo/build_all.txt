@@ -1,5 +1,8 @@
 @@./requirements.txt
-requirement list
+list requirement
 
-_relative_run_script ./products.txt
-product list
+@@ ./products.txt
+@@ ./constraints.txt
+list product
+
+

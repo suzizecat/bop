@@ -23,7 +23,7 @@ class AppProduct(cmd2.CommandSet):
 	addparser.add_argument("-f", "--force", action="store_true",
 							 help="Fail silently if the product already exists")
 
-	@cmd2.as_subcommand_to("product","add",addparser, help="Add a product")
+	@cmd2.as_subcommand_to("add","product",addparser, help="Add a product")
 	def product_add(self,args):
 		code = args.code
 		if args.parent is not None:
@@ -44,7 +44,7 @@ class AppProduct(cmd2.CommandSet):
 
 	_list_parser = cmd2.Cmd2ArgumentParser()
 	_list_parser.add_argument("--output","-o", default=None, type=str, help="Output in script format")
-	@cmd2.as_subcommand_to("product", "list", _list_parser, help="List all products")
+	@cmd2.as_subcommand_to( "list", "product", _list_parser, help="List all products")
 	def product_list(self,args):
 		self._print_str = ""
 		self._output_str = ""
@@ -62,7 +62,7 @@ class AppProduct(cmd2.CommandSet):
 				f.write(self._output_str)
 
 	def print_level(self, prod: Product, level=0):
-		self._output_str += f'product add "{prod.code}" -f'
+		self._output_str += f'add product "{prod.code}" -f'
 		if prod.name is not None: self._output_str += f' -n "{prod.name}"'
 		if prod.parent is not None: self._output_str += f' -p "{prod.parent.code}"'
 		if prod.descr is not None: self._output_str += f' -d "{prod.descr}"'
@@ -80,14 +80,10 @@ class AppProduct(cmd2.CommandSet):
 
 	_rm_parser = cmd2.Cmd2ArgumentParser()
 	_rm_parser.add_argument("code",type=str, help="Product code to use")
-	@cmd2.as_subcommand_to("product", "rm", _rm_parser, help="Remove a product")
+	@cmd2.as_subcommand_to("remove","product",  _rm_parser, help="Remove a product")
 	def product_rm(self,args):
 		AppEnv().db.remove_product(args.code)
 		self._cmd.pfeedback(f"Removing product from {AppEnv().db.name} with the code {args.code}")
-
-	# _bind_parser = cmd2.Cmd2ArgumentParser()
-	# _bind_parser.add_subparsers()
-
 
 	_constr_parser = cmd2.Cmd2ArgumentParser()
 	_constr_parser.add_argument("constr", type=str, help="Constraint code to use" )
@@ -106,28 +102,27 @@ class AppProduct(cmd2.CommandSet):
 	_bind_parser = cmd2.Cmd2ArgumentParser()
 	_bind_parser.add_argument("prod",type=str, help="Product code to bind")
 	_bind_subparser = _bind_parser.add_subparsers(title="action")
-	@cmd2.as_subcommand_to("product", "bind", _bind_parser, help="Bind a product")
+	@cmd2.as_subcommand_to( "bind","product", _bind_parser, help="Bind a product")
 	def _bind_placeholder(self, args):
 		pass
-
 
 	_unbind_parser = cmd2.Cmd2ArgumentParser()
 	_unbind_parser.add_argument("prod", type=str, help="Product code to unbind")
 	_unbind_subparser = _unbind_parser.add_subparsers(title="action")
-	@cmd2.as_subcommand_to("product", "unbind", _unbind_parser, help="Unbind a product")
+	@cmd2.as_subcommand_to("unbind","product",  _unbind_parser, help="Unbind a product")
 	def _unbind_placeholder(self, args):
 		pass
 
-	@cmd2.as_subcommand_to("product bind", "to-constraint", _constr_parser, help="Bind a product")
+	@cmd2.as_subcommand_to("bind product", "to-constraint", _constr_parser, help="Bind a product")
 	def product_constraint(self,args):
 		prod = AppEnv().db.get_product_by_code(args.prod)
 		prod.bind_to_constraint(AppEnv().db.get_constraint_by_code(args.constr))
 
-	@cmd2.as_subcommand_to("product unbind", "to-constraint", _constr_parser, help="Unbind a product")
+	@cmd2.as_subcommand_to("unbind product", "to-constraint", _constr_parser, help="Unbind a product")
 	def product_unconstraint(self,args):
 		prod = AppEnv().db.get_product_by_code(args.prod)
 		prod.unbind_constraint(AppEnv().db.get_constraint_by_code(args.constr))
-	@cmd2.as_subcommand_to("product", "move", addparser, help="Edit a product")
+	@cmd2.as_subcommand_to("update", "product",  addparser, help="Edit a product")
 	def product_move(self, args):
 		prod = AppEnv().db.get_product_by_code(args.code)
 		if args.new_code is not None:

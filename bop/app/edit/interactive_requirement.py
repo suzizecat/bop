@@ -1,5 +1,5 @@
 import cmd2
-
+import os
 from bop.app import AppEnv
 from bop.db.data import Requirement
 
@@ -21,7 +21,7 @@ class AppRequirement(cmd2.CommandSet):
 	addparser.add_argument("-f", "--force", action="store_true",
 							 help="Fail silently if the requirement already exists")
 
-	@cmd2.as_subcommand_to("requirement","add",addparser, help="Add a requirement")
+	@cmd2.as_subcommand_to("add","requirement", addparser, help="Add a requirement")
 	def requirement_add(self,args):
 		code = args.code
 		if args.parent is not None:
@@ -42,7 +42,7 @@ class AppRequirement(cmd2.CommandSet):
 
 	_list_parser = cmd2.Cmd2ArgumentParser()
 	_list_parser.add_argument("--output","-o", default=None, type=str, help="Output in script format")
-	@cmd2.as_subcommand_to("requirement", "list", _list_parser, help="List all requirement")
+	@cmd2.as_subcommand_to("list", "requirement",  _list_parser, help="List all requirement")
 	def requirement_list(self,args):
 		self._print_str = ""
 		self._output_str = ""
@@ -61,12 +61,12 @@ class AppRequirement(cmd2.CommandSet):
 
 	_rm_parser = cmd2.Cmd2ArgumentParser()
 	_rm_parser.add_argument("code",type=str, help="Requirement code to use")
-	@cmd2.as_subcommand_to("requirement", "rm", _rm_parser, help="Remove a requirement")
+	@cmd2.as_subcommand_to("remove", "requirement",  _rm_parser, help="Remove a requirement")
 	def requirement_rm(self,args):
 		AppEnv().db.remove_requirement(args.code)
 		self._cmd.pfeedback(f"Removing requirement from {AppEnv().db.name} with the code {args.code}")
 
-	@cmd2.as_subcommand_to("requirement", "move", addparser, help="Edit a requirement")
+	@cmd2.as_subcommand_to("update", "requirement", addparser, help="Edit a requirement")
 	def requirement_move(self, args):
 		req = AppEnv().db.get_requirement_by_code(args.code)
 		if args.new_code is not None:
@@ -81,7 +81,7 @@ class AppRequirement(cmd2.CommandSet):
 		self._cmd.pfeedback(f"I'm editing the requirement of {AppEnv().db.name} with the code {args.code} and the name {args.name}")
 
 	def print_level(self,req : Requirement, level = 0):
-		self._output_str += f'requirement add "{req.code}" -f'
+		self._output_str += f'add requirement "{req.code}" -f'
 		if req.name is not None : self._output_str += f' -n "{req.name}"'
 		if req.parent is not None : self._output_str += f' -p "{req.parent.code}"'
 		if req.descr is not None : self._output_str += f' -d "{req.descr}"'

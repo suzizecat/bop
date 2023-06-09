@@ -3,12 +3,16 @@ import cmd2
 from cmd2 import CommandSet, with_argparser, with_category, with_default_category
 
 # Required to register the apps
-from .edit import AppRequirement
-from .edit import AppProduct
-from .edit import AppConstraint
+from .edit.commands import EditCommands
+from .edit.interactive_requirement import AppRequirement
+from .edit.interactive_products import AppProduct
+from .edit.interactive_constraints import AppConstraint
+# from .edit import AppProduct
+# from .edit import AppConstraint
 
 from bop.gui.window import BopMainWindow
 from .env import AppEnv
+
 
 class Interactive(cmd2.Cmd):
 	def __init__(self, *args, **kwargs):
@@ -19,31 +23,9 @@ class Interactive(cmd2.Cmd):
 
 		self.intro = f"Welcome to the Build Objects Properly (BOP) tool.\n"
 
-	base_parser = cmd2.Cmd2ArgumentParser()
-	base_subparsers = base_parser.add_subparsers(title='action', help='available actions')
-
-	@with_argparser(base_parser)
-	def do_requirement(self, ns: argparse.Namespace):
-		"""Manage requirements."""
-		self._default_subcommand_stub("requirement",ns)
-
-	prod_parser = cmd2.Cmd2ArgumentParser()
-	prod_subparser = prod_parser.add_subparsers(title='action', help='available actions')
-
-	@with_argparser(prod_parser)
-	def do_product(self, ns: argparse.Namespace):
-		"""Manage products."""
-		self._default_subcommand_stub("product",ns)
-
-
-	constr_parser = cmd2.Cmd2ArgumentParser()
-	constr_subparser = constr_parser.add_subparsers(title='action', help='available actions')
-
-	@with_argparser(constr_parser)
-	def do_constraint(self, ns: argparse.Namespace):
-		"""Manage products."""
-		self._default_subcommand_stub("constraint",ns)
-
+	# Add "aliases"
+	do_exit = cmd2.Cmd.do_quit
+	do_source = cmd2.Cmd.do__relative_run_script
 
 	def do_gui(self,_):
 		"""Start the GUI"""
