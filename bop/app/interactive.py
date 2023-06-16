@@ -7,6 +7,7 @@ from .edit.commands import EditCommands
 from .edit.interactive_requirement import AppRequirement
 from .edit.interactive_products import AppProduct
 from .edit.interactive_constraints import AppConstraint
+from .analyze.app_analyze import AppAnalyze
 # from .edit import AppProduct
 # from .edit import AppConstraint
 

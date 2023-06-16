@@ -39,6 +39,18 @@ class DB:
 			self._db.rollback()
 
 	@property
+	def requirement_codes(self):
+		return [x.code for x in self._requirements.values()]
+
+	@property
+	def product_codes(self):
+		return [x.code for x in self._products.values()]
+
+	@property
+	def constraint_codes(self):
+		return [x.code for x in self._constraints.values()]
+
+	@property
 	def name(self):
 		return os.path.basename(self.path)
 
@@ -54,6 +66,7 @@ class DB:
 		self.read_constraints()
 
 		self.read_product_constraints_bindings()
+		self.read_constraint_requirement_bindings()
 
 	def save_db(self):
 		self.save_requirements()
@@ -61,6 +74,7 @@ class DB:
 		self.save_constraints()
 
 		self.save_product_constraints_bindings()
+		self.save_constraint_requirement_bindings()
 
 	def read_requirements(self):
 		self.clear_requirements()
@@ -321,15 +335,31 @@ class DB:
 			for row in results:
 				self._products[row[1]].bind_to_constraint(self._constraints[row[2]])
 
-	def save_product_constraints_bindings(self):
-		to_create = list()
-		for prod in self._products.values():
-			to_create.extend(prod.to_sql_constr_bind_dict())
+	def read_constraint_requirement_bindings(self):
+		with self as sql:
+			results = sql.execute("SELECT * FROM t_constraint_req_bind")
+			for row in results:
+				self._constraints[row[2]].bind_to_requirement(self._requirements[row[1]])
 
-		with self as sql :
+	def save_product_constraints_bindings(self):
+		prod_to_create = list()
+		for elt in self._products.values():
+			prod_to_create.extend(elt.to_sql_constr_bind_dict())
+
+		with self as sql:
 			# Empty table and fill again
 			sql.execute("DELETE FROM t_cstr_prod")
-			sql.executemany("INSERT INTO t_cstr_prod(id_prod, id_cstr) VALUES (:id_prod, :id_cstr)", to_create)
+			sql.executemany("INSERT INTO t_cstr_prod(id_prod, id_cstr) VALUES (:id_prod, :id_cstr)", prod_to_create)
+
+	def save_constraint_requirement_bindings(self):
+		req_to_create = list()
+		for elt in self._requirements.values():
+			req_to_create.extend(elt.to_sql_constr_bind_dict())
+
+		with self as sql:
+			# Empty table and fill again
+			sql.execute("DELETE FROM t_constraint_req_bind")
+			sql.executemany("INSERT INTO t_constraint_req_bind(id_req, id_cstr) VALUES (:id_req, :id_cstr)", req_to_create)
 
 
 if __name__ == "__main__" :

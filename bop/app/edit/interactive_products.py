@@ -14,16 +14,16 @@ class AppProduct(cmd2.CommandSet):
 		self._print_str = ""
 		self._output_str = ""
 
-	addparser = cmd2.Cmd2ArgumentParser()
+	_add_parser = cmd2.Cmd2ArgumentParser()
 
-	addparser.add_argument("code", type=str, help="Product code to use")
-	addparser.add_argument("-n", "--name", type=str, help="Human readable name")
-	addparser.add_argument("-d", "--description", type=str, help="Long description")
-	addparser.add_argument("-p", "--parent", type=str, default=None, help="Code of the parent")
-	addparser.add_argument("-f", "--force", action="store_true",
+	_add_parser.add_argument("code", type=str, help="Product code to use")
+	_add_parser.add_argument("-n", "--name", type=str, help="Human readable name")
+	_add_parser.add_argument("-d", "--description", type=str, help="Long description")
+	_add_parser.add_argument("-p", "--parent", type=str, choices=AppEnv().product_codes, help="Code of the parent")
+	_add_parser.add_argument("-f", "--force", action="store_true",
 							 help="Fail silently if the product already exists")
 
-	@cmd2.as_subcommand_to("add","product",addparser, help="Add a product")
+	@cmd2.as_subcommand_to("add","product",_add_parser, help="Add a product")
 	def product_add(self,args):
 		code = args.code
 		if args.parent is not None:
@@ -35,12 +35,12 @@ class AppProduct(cmd2.CommandSet):
 			if code.strip() == "*":
 				raise ValueError("Impossible to use the * placeholder without a proper parent")
 
-		req = Product(code, args.name, args.description)
-		AppEnv().db.add_product(req, ignore_duplicate=args.force)
+		prod = Product(code, args.name, args.description)
+		AppEnv().db.add_product(prod, ignore_duplicate=args.force)
 
-		req.parent = parent
-
-		self._cmd.pfeedback(f"Adding a product to {AppEnv().db.path} with the code {req.code} and the name {args.name}")
+		prod.parent = parent
+		AppEnv().cache_product_codes(prod.code)
+		self._cmd.pfeedback(f"Adding a product to {AppEnv().db.path} with the code {prod.code} and the name {args.name}")
 
 	_list_parser = cmd2.Cmd2ArgumentParser()
 	_list_parser.add_argument("--output","-o", default=None, type=str, help="Output in script format")
@@ -74,40 +74,41 @@ class AppProduct(cmd2.CommandSet):
 		for constr in sorted(prod.constraints, key=lambda x: x.code) :
 			self._print_str += f"{'':>{2 * (level+1):d}s}- Bound to {constr.code}\n"
 
-		for sreq in sorted(prod._children, key=lambda x: x.code):
-			self.print_level(sreq, level + 1)
+		for sprod in sorted(prod._children, key=lambda x: x.code):
+			self.print_level(sprod, level + 1)
 
 
 	_rm_parser = cmd2.Cmd2ArgumentParser()
-	_rm_parser.add_argument("code",type=str, help="Product code to use")
+	_rm_parser.add_argument("code",type=str, help="Product code to use", choices=AppEnv().product_codes)
 	@cmd2.as_subcommand_to("remove","product",  _rm_parser, help="Remove a product")
 	def product_rm(self,args):
 		AppEnv().db.remove_product(args.code)
+		AppEnv().uncache_product_codes(args.code)
 		self._cmd.pfeedback(f"Removing product from {AppEnv().db.name} with the code {args.code}")
 
 	_constr_parser = cmd2.Cmd2ArgumentParser()
-	_constr_parser.add_argument("constr", type=str, help="Constraint code to use" )
+	_constr_parser.add_argument("constr", type=str, help="Constraint code to use", choices=AppEnv().constraint_codes )
 
-	def _default_subcommand_stub(self, command : str, ns : argparse.Namespace):
-		handler = ns.cmd2_handler.get()
-		if handler is not None:
-			# Call whatever subcommand function was selected
-			handler(ns)
-		else:
-			# No subcommand was provided, so call help
-			self.poutput('This command does nothing without sub-parsers registered')
-			self.do_help(command)
+	# def _default_subcommand_stub(self, command : str, ns : argparse.Namespace):
+	# 	handler = ns.cmd2_handler.get()
+	# 	if handler is not None:
+	# 		# Call whatever subcommand function was selected
+	# 		handler(ns)
+	# 	else:
+	# 		# No subcommand was provided, so call help
+	# 		self.poutput('This command does nothing without sub-parsers registered')
+	# 		self.do_help(command)
 
 
 	_bind_parser = cmd2.Cmd2ArgumentParser()
-	_bind_parser.add_argument("prod",type=str, help="Product code to bind")
+	_bind_parser.add_argument("prod",type=str, help="Product code to bind", choices=AppEnv().product_codes)
 	_bind_subparser = _bind_parser.add_subparsers(title="action")
 	@cmd2.as_subcommand_to( "bind","product", _bind_parser, help="Bind a product")
 	def _bind_placeholder(self, args):
 		pass
 
 	_unbind_parser = cmd2.Cmd2ArgumentParser()
-	_unbind_parser.add_argument("prod", type=str, help="Product code to unbind")
+	_unbind_parser.add_argument("prod", type=str, help="Product code to unbind", choices=AppEnv().product_codes)
 	_unbind_subparser = _unbind_parser.add_subparsers(title="action")
 	@cmd2.as_subcommand_to("unbind","product",  _unbind_parser, help="Unbind a product")
 	def _unbind_placeholder(self, args):
@@ -122,11 +123,22 @@ class AppProduct(cmd2.CommandSet):
 	def product_unconstraint(self,args):
 		prod = AppEnv().db.get_product_by_code(args.prod)
 		prod.unbind_constraint(AppEnv().db.get_constraint_by_code(args.constr))
-	@cmd2.as_subcommand_to("update", "product",  addparser, help="Edit a product")
+
+	_update_parser = cmd2.Cmd2ArgumentParser()
+
+	_update_parser.add_argument("code", type=str, help="Product code to use", choices=AppEnv().product_codes)
+	_update_parser.add_argument("-n", "--name", type=str, help="Human readable name")
+	_update_parser.add_argument("-d", "--description", type=str, help="Long description")
+	_update_parser.add_argument("-p", "--parent", type=str, choices=AppEnv().product_codes, help="Code of the parent")
+	_update_parser.add_argument("-f", "--force", action="store_true",
+							 help="Fail silently if the product already exists")
+	@cmd2.as_subcommand_to("update", "product",  _update_parser, help="Edit a product")
 	def product_move(self, args):
 		prod = AppEnv().db.get_product_by_code(args.code)
 		if args.new_code is not None:
+			AppEnv().uncache_product_codes(prod.code)
 			prod.code = args.new_code
+			AppEnv().cache_product_codes(prod.code)
 		if args.name is not None:
 			prod.name = args.name if args.name.strip() != "" else None
 		if args.description is not None:

@@ -64,3 +64,13 @@ class EditCommands(BaseBopCommandSet) :
 	def do_list(self, ns: argparse.Namespace):
 		"""Manage requirements."""
 		self._default_subcommand_stub("list", ns)
+
+@with_default_category("Database Analysis")
+class AnalyzeCommands(BaseBopCommandSet) :
+	def __init__(self):
+		super().__init__()
+
+	@with_argparser(_base_subcommand_parser())
+	def do_analyze(self, ns: argparse.Namespace):
+		"""Manage requirements."""
+		self._default_subcommand_stub("analyze",ns)

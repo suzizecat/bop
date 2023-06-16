@@ -30,6 +30,7 @@ class BopEntry:
 	def set_env_from_args(self,args):
 		AppEnv().db = DB(args.db)
 		AppEnv().db.read_db()
+		AppEnv().refresh_caches()
 
 	def run_sub_apps(self,args_list):
 		# Everything else shall have been setup beforehand, so no need to re-specify top level args.

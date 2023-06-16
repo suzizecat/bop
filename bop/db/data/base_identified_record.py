@@ -10,7 +10,8 @@ class BaseIdentifiedRecord:
 
 		self._updated = True
 
-
+	def __hash__(self):
+		return hash((type(self).__name__, self._id, self._code,self._name))
 	def validate(self):
 		self._updated = False
 
@@ -51,6 +52,18 @@ class BaseIdentifiedRecord:
 			self.invalidate()
 			self._descr = new
 
+	@property
+	def strdescr(self):
+		return self.descr if self.descr is not None else ""
+	@property
+	def impact_childs(self) -> T.Union[None, T.List["BaseIdentifiedRecord"]]:
+		return None
+
+	@property
+	def as_report(self) -> str:
+		base_id = f"{self.code} : {self.name}"
+		return f"{base_id:30s} {self.strdescr}"
+
 
 #
 		# self._code : T.Union[str,None] = code
@@ -67,6 +80,10 @@ class BaseIdentifiedHierarchicalRecord(BaseIdentifiedRecord):
 		self._children : T.List[BaseIdentifiedHierarchicalRecord] = list()
 
 		self.invalidate()
+
+	@property
+	def children(self):
+		return self._children
 
 	@property
 	def resolved(self):
@@ -139,7 +156,7 @@ class BaseIdentifiedHierarchicalRecord(BaseIdentifiedRecord):
 		new_code = ""
 		new_code_base = self.code
 		new_code_base += "." if new_code_base[-1].isdigit() else "-"
-		code_number = len(self._children)
+		code_number = len(self._children) + 1
 
 		valid = False
 		while not valid:
