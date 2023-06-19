@@ -1,0 +1,3 @@
+add constraint "SURFACE-1" -f -n "Surface max" -d "0.22m2"
+bind constraint "SURFACE-1" to-requirement "REQ-1.1.1"
+bind product "CAR" to-constraint "SURFACE-1"

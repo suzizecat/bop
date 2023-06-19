@@ -1,7 +1,7 @@
 import argparse
 import cmd2
 from cmd2 import CommandSet, with_argparser, with_category, with_default_category
-
+from bop.app import AppEnv
 # Required to register the apps
 # from .edit import AppRequirement
 # from .edit import AppProduct
@@ -28,6 +28,7 @@ class BaseBopCommandSet(CommandSet) :
 			# No subcommand was provided, so call help
 			self._cmd.poutput('This command does nothing without sub-parsers registered')
 			self._cmd.do_help(command)
+
 
 
 @with_default_category("Database edition")

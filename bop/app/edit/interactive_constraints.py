@@ -78,14 +78,13 @@ class AppConstraint(cmd2.CommandSet):
 		AppEnv().uncache_constraint_codes(args.code)
 		self._cmd.pfeedback(f"Removing constraint from {AppEnv().db.name} with the code {args.code}")
 
-	_updateparser = cmd2.Cmd2ArgumentParser()
+	_update_parser = cmd2.Cmd2ArgumentParser()
 
-	_updateparser.add_argument("code", type=str, help="Product code to use",choices=AppEnv().constraint_codes)
-	_updateparser.add_argument("-n", "--name", type=str, help="Human readable name")
-	_updateparser.add_argument("-d", "--description", type=str, help="Long description")
-	_updateparser.add_argument("-f", "--force", action="store_true",
-							 help="Fail silently if the product already exists")
-	@cmd2.as_subcommand_to("update", "constraint", _updateparser, help="Edit a product")
+	_update_parser.add_argument("code", type=str, help="Product code to use", choices=AppEnv().constraint_codes)
+	_update_parser.add_argument("-n", "--name", type=str,default=None, help="Human readable name")
+	_update_parser.add_argument("-d", "--description", type=str,default=None, help="Long description")
+	_update_parser.add_argument("-c", "--new-code", type=str, default=None, help="New requirement code")
+	@cmd2.as_subcommand_to("update", "constraint", _update_parser, help="Edit a product")
 	def constraint_move(self, args):
 		constr = AppEnv().db.get_constraint_by_code(args.code)
 		if args.new_code is not None:

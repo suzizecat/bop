@@ -14,6 +14,8 @@ from .analyze.app_analyze import AppAnalyze
 from bop.gui.window import BopMainWindow
 from .env import AppEnv
 
+from threading import Thread
+
 
 class Interactive(cmd2.Cmd):
 	def __init__(self, *args, **kwargs):
@@ -23,6 +25,8 @@ class Interactive(cmd2.Cmd):
 		self.prompt = "Bop>"
 
 		self.intro = f"Welcome to the Build Objects Properly (BOP) tool.\n"
+		self.gui_thread = None
+
 
 	# Add "aliases"
 	do_exit = cmd2.Cmd.do_quit
@@ -30,9 +34,19 @@ class Interactive(cmd2.Cmd):
 
 	def do_gui(self,_):
 		"""Start the GUI"""
-		root = BopMainWindow()
+		if self.gui_thread is not None and self.gui_thread.is_alive():
+			self.poutput("Await for already opened window to be closed.")
+			self.gui_thread.join()
+
+		def gui_function() :
+			AppEnv().is_gui_up = True
+			root = BopMainWindow()
+			root.mainloop()
+			AppEnv().is_gui_up = False
+
 		self.poutput("Starting BOP GUI.")
-		root.mainloop()
+		self.gui_thread = Thread(target=gui_function)
+		self.gui_thread.start()
 
 	def update_prompt(self):
 		self.prompt = f"Bop {AppEnv().db.name}> "

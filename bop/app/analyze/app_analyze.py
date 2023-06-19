@@ -21,24 +21,24 @@ class AppAnalyze(cmd2.CommandSet):
 	_parser_analyze_impact_req.add_argument("code", type=str, help="Item code to use", choices=AppEnv().requirement_codes)
 	@cmd2.as_subcommand_to("analyze impact", "of-requirement", _parser_analyze_impact_req, help="Analyze impact of a requirement")
 	def analyze_requirement_impact(self, args):
-		def print_impact_level(self, elt : BaseIdentifiedRecord, level = 0) :
-			space = "  "*level
-			elt_type = type(elt).__name__
-
-			if elt.impact_childs is not None and len(elt.impact_childs) > 0 :
-				self._print_str += f"{space}- {elt_type} {elt.code} will impact:\n"
-				for s_elt in elt.impact_childs :
-					print_impact_level(self,s_elt,level + 1)
-
-			else :
-				self._print_str += f"{space}- {elt_type} {elt.code}\n"
-
-		self._print_str = ""
+		# def print_impact_level(self, elt : BaseIdentifiedRecord, level = 0) :
+		# 	space = "  "*level
+		# 	elt_type = type(elt).__name__
+		#
+		# 	if elt.impact_childs is not None and len(elt.impact_childs) > 0 :
+		# 		self._print_str += f"{space}- {elt_type} {elt.code} will impact:\n"
+		# 		for s_elt in elt.impact_childs :
+		# 			print_impact_level(self,s_elt,level + 1)
+		#
+		# 	else :
+		# 		self._print_str += f"{space}- {elt_type} {elt.code}\n"
+		#
+		# self._print_str = ""
 		elt = AppEnv().db.get_requirement_by_code(args.code)
-		print_impact_level(self,elt)
+		# print_impact_level(self,elt)
 
 		self._cmd.poutput(f"Requirement change impact report for {elt.code}:")
-		self._cmd.poutput(self._print_str)
+		self._cmd.poutput(AppEnv().prj.report_impact(elt))
 
 
 

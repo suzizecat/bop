@@ -1,3 +1,5 @@
+from queue import Queue
+
 
 class Singleton(type):
 	__instances = {}
@@ -8,11 +10,15 @@ class Singleton(type):
 		return Singleton.__instances[cls]
 
 
-class AppEnv(metaclass=Singleton) :
+class AppEnv(metaclass=Singleton):
 	def __init__(self):
 		from bop.db import DB
+		from bop.db import Project
 
 		self.db : DB = None
+		self.prj : Project = None
+		self.is_gui_up = False
+		self.gui_control_queue = Queue()
 		self.requirement_codes = list()
 		self.product_codes = list()
 		self.constraint_codes = list()
@@ -54,3 +60,7 @@ class AppEnv(metaclass=Singleton) :
 
 	def uncache_constraint_codes(self, code):
 		self.constraint_codes.remove(code)
+
+	def gui_refresh(self):
+		if self.is_gui_up :
+			self.gui_control_queue.put_nowait("refresh")

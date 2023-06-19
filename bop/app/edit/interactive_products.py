@@ -127,11 +127,11 @@ class AppProduct(cmd2.CommandSet):
 	_update_parser = cmd2.Cmd2ArgumentParser()
 
 	_update_parser.add_argument("code", type=str, help="Product code to use", choices=AppEnv().product_codes)
-	_update_parser.add_argument("-n", "--name", type=str, help="Human readable name")
-	_update_parser.add_argument("-d", "--description", type=str, help="Long description")
-	_update_parser.add_argument("-p", "--parent", type=str, choices=AppEnv().product_codes, help="Code of the parent")
-	_update_parser.add_argument("-f", "--force", action="store_true",
-							 help="Fail silently if the product already exists")
+	_update_parser.add_argument("-n", "--name", type=str, default=None, help="Human readable name")
+	_update_parser.add_argument("-d", "--description", type=str,default=None, help="Long description")
+	_update_parser.add_argument("-p", "--parent", type=str,default=None, choices=AppEnv().product_codes, help="Code of the parent")
+	_update_parser.add_argument("-c", "--new-code", type=str, default=None, help="New requirement code")
+
 	@cmd2.as_subcommand_to("update", "product",  _update_parser, help="Edit a product")
 	def product_move(self, args):
 		prod = AppEnv().db.get_product_by_code(args.code)

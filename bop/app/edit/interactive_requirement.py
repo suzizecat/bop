@@ -39,6 +39,7 @@ class AppRequirement(cmd2.CommandSet):
 		req.parent = parent
 
 		self._cmd.pfeedback(f"Adding a requirement to {AppEnv().db.path} with the code {req.code} and the name {args.name}")
+		AppEnv().gui_refresh()
 
 	_list_parser = cmd2.Cmd2ArgumentParser()
 	_list_parser.add_argument("--output","-o", default=None, type=str, help="Output in script format")
@@ -66,16 +67,16 @@ class AppRequirement(cmd2.CommandSet):
 		AppEnv().db.remove_requirement(args.code)
 		AppEnv().uncache_requirement_codes(args.code)
 		self._cmd.pfeedback(f"Removing requirement from {AppEnv().db.name} with the code {args.code}")
+		AppEnv().gui_refresh()
 
 
 	_update_parser = cmd2.Cmd2ArgumentParser()
 
 	_update_parser.add_argument("code", type=str, help="Requirement code to use", choices=AppEnv().requirement_codes)
-	_update_parser.add_argument("-n", "--name", type=str, help="Human readable name")
-	_update_parser.add_argument("-d", "--description", type=str, help="Long description")
+	_update_parser.add_argument("-n", "--name", type=str,default=None, help="Human readable name")
+	_update_parser.add_argument("-d", "--description", type=str,default=None, help="Long description")
 	_update_parser.add_argument("-p", "--parent", type=str, default=None, help="Code of the parent", choices=AppEnv().requirement_codes)
-	_update_parser.add_argument("-f", "--force", action="store_true",
-							 help="Fail silently if the requirement already exists")
+	_update_parser.add_argument("-c","--new-code", type=str, default=None, help="New requirement code")
 	@cmd2.as_subcommand_to("update", "requirement", _update_parser, help="Edit a requirement")
 	def requirement_move(self, args):
 		req = AppEnv().db.get_requirement_by_code(args.code)
@@ -91,6 +92,7 @@ class AppRequirement(cmd2.CommandSet):
 			req.parent = AppEnv().db.get_requirement_by_code(args.parent) if args.parent.strip() != "" else None
 
 		self._cmd.pfeedback(f"I'm editing the requirement of {AppEnv().db.name} with the code {args.code} and the name {args.name}")
+		AppEnv().gui_refresh()
 
 	def print_level(self,req : Requirement, level = 0):
 		self._output_str += f'add requirement "{req.code}" -f'

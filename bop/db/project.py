@@ -14,7 +14,7 @@ class Project:
 	def _report_from_tree(root :BaseIdentifiedRecord, tree : T.Dict[BaseIdentifiedRecord, T.List[BaseIdentifiedRecord]]):
 		def _line(elt : BaseIdentifiedRecord, level) :
 			space = "  "* level
-			identifier = f"{space}- {elt.id} : {elt.name}"
+			identifier = f"{space}- {type(elt).__name__} {elt.code} : {elt.name}"
 			return f"{identifier:.<50s} {elt.descr}\n"
 
 		def _tree(root : BaseIdentifiedRecord, level = 0) :
@@ -39,7 +39,18 @@ class Project:
 				ret += _gen_report(root)
 			return ret
 
+	def report_impact(self, roots : T.Union[BaseIdentifiedHierarchicalRecord,T.Iterable[BaseIdentifiedHierarchicalRecord]], same_elements = False):
+		def _gen_report(root : BaseIdentifiedHierarchicalRecord) :
+			tree = self.get_impact_tree(root)
+			return self._report_from_tree(root,tree)
 
+		if isinstance(roots,BaseIdentifiedHierarchicalRecord) :
+			return _gen_report(roots)
+		else :
+			ret = ""
+			for root in roots :
+				ret += _gen_report(root)
+			return ret
 
 	def get_hierarchy_tree(self, root : BaseIdentifiedHierarchicalRecord) -> T.Dict[BaseIdentifiedRecord, T.List[BaseIdentifiedRecord]]:
 		ret = {root:root.children}
