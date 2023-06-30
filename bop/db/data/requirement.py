@@ -2,6 +2,7 @@ import typing as T
 
 from .base_identified_record import BaseIdentifiedHierarchicalRecord
 from .constraint import Constraint
+from .maturity_code import Maturity
 
 class Requirement(BaseIdentifiedHierarchicalRecord):
 	@classmethod
@@ -16,6 +17,7 @@ class Requirement(BaseIdentifiedHierarchicalRecord):
 		ret.name = row[2]
 		ret.descr = row[3]
 		ret._parent_id = row[4]
+		# ret.maturity = row[5]
 
 		return ret
 
@@ -23,15 +25,15 @@ class Requirement(BaseIdentifiedHierarchicalRecord):
 		super().__init__(code,name,descr)
 
 		self.constraints : T.List[Constraint] = list()
-
-
+		self.maturity : Maturity = None
 
 	def to_sql_dict(self):
 		return {"id" : self.id,
 				"code" :self.code,
 				"name" :self.name,
 				"descr":self.descr,
-				"parent" : self._parent_id}
+				"parent" : self._parent_id,
+				"maturity" : self.maturity._id if self.maturity is not None else None }
 
 	def to_sql_constr_bind_dict(self):
 		ret = list()
@@ -50,8 +52,20 @@ class Requirement(BaseIdentifiedHierarchicalRecord):
 			self.constraints.remove(constr)
 			constr.unbind_requirement(self)
 
+	def set_maturity(self,mat : Maturity):
+		if self.maturity is not mat :
+			self.maturity = mat
+			self.invalidate()
+
+	def unset_maturity(self,mat : Maturity = None):
+		if mat is None or self.maturity is mat :
+			self.set_maturity(None)
+
 	@property
 	def impact_childs(self) -> T.Union[None, T.List["BaseIdentifiedRecord"]]:
 		return self.constraints
 
+	@property
+	def mat_level(self):
+		return None if self.maturity is None else int(self.maturity)
 

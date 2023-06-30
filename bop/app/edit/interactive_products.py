@@ -51,28 +51,34 @@ class AppProduct(cmd2.CommandSet):
 
 		base = AppEnv().db.get_root_products()
 
-		self._cmd.poutput(f"Project : {AppEnv().db.path}")
+		if not args.one_per_line :
+			self._cmd.poutput(f"Project : {AppEnv().db.path}")
 		for prod in sorted(base, key=lambda x: x.code):
-			self.print_level(prod)
+			self.print_level(prod,simple = args.one_per_line)
 
 		self._cmd.poutput(self._print_str)
+
 		if args.output is not None:
-			print(f"Dumping in {os.path.abspath(args.output)}")
+			self._cmd.pfeedback(f"Dumping in {os.path.abspath(args.output)}")
 			with open(args.output, "w") as f:
 				f.write(self._output_str)
 
-	def print_level(self, prod: Product, level=0):
+	def print_level(self, prod: Product, level=0, simple = False):
 		self._output_str += f'add product "{prod.code}" -f'
 		if prod.name is not None: self._output_str += f' -n "{prod.name}"'
 		if prod.parent is not None: self._output_str += f' -p "{prod.parent.code}"'
 		if prod.descr is not None: self._output_str += f' -d "{prod.descr}"'
 		self._output_str += "\n"
 
-		descr = "" if prod.descr is None else prod.descr
-		qual_name = f"{prod.code} : {prod.name}"
-		self._print_str += f"{'':>{2 * level:d}s}- {qual_name:.<{50 - 2 * level:d}s} {descr}\n"
-		for constr in sorted(prod.constraints, key=lambda x: x.code) :
-			self._print_str += f"{'':>{2 * (level+1):d}s}- Bound to {constr.code}\n"
+		if simple :
+			self._print_str += f"{prod.code}\n"
+		else :
+			descr = "" if prod.descr is None else prod.descr
+			qual_name = f"{prod.code} : {prod.name}"
+
+			self._print_str += f"{'':>{2 * level:d}s}- {qual_name:.<{50 - 2 * level:d}s} {descr}\n"
+			for constr in sorted(prod.constraints, key=lambda x: x.code) :
+				self._print_str += f"{'':>{2 * (level+1):d}s}- Bound to {constr.code}\n"
 
 		for sprod in sorted(prod._children, key=lambda x: x.code):
 			self.print_level(sprod, level + 1)

@@ -1,5 +1,6 @@
 import argparse
 import cmd2
+import typing as T
 from cmd2 import CommandSet, with_argparser, with_category, with_default_category
 
 # Required to register the apps
@@ -7,11 +8,12 @@ from .edit.commands import EditCommands
 from .edit.interactive_requirement import AppRequirement
 from .edit.interactive_products import AppProduct
 from .edit.interactive_constraints import AppConstraint
+from .edit.interactive_maturity import AppMaturity
 from .analyze.app_analyze import AppAnalyze
 # from .edit import AppProduct
 # from .edit import AppConstraint
 
-from bop.gui.window import BopMainWindow
+from bop.gui.window import BopMainWindow,BopMainWindowThread
 from .env import AppEnv
 
 from threading import Thread
@@ -25,8 +27,14 @@ class Interactive(cmd2.Cmd):
 		self.prompt = "Bop>"
 
 		self.intro = f"Welcome to the Build Objects Properly (BOP) tool.\n"
-		self.gui_thread = None
+		self.gui_thread : BopMainWindowThread = None
 
+		self.register_postloop_hook(self._ensure_gui_cleanup)
+	def _ensure_gui_cleanup(self) -> None:
+		if self.gui_thread is not None and self.gui_thread.is_alive():
+			self.poutput("Cleanup the GUI")
+			self.gui_thread.stop()
+			self.gui_thread.join()
 
 	# Add "aliases"
 	do_exit = cmd2.Cmd.do_quit
@@ -39,14 +47,14 @@ class Interactive(cmd2.Cmd):
 			self.gui_thread.join()
 
 		def gui_function() :
-			AppEnv().is_gui_up = True
 			root = BopMainWindow()
 			root.mainloop()
-			AppEnv().is_gui_up = False
 
 		self.poutput("Starting BOP GUI.")
-		self.gui_thread = Thread(target=gui_function)
+		self.gui_thread = BopMainWindowThread()
 		self.gui_thread.start()
+
+
 
 	def update_prompt(self):
 		self.prompt = f"Bop {AppEnv().db.name}> "

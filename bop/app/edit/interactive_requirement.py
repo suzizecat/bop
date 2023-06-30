@@ -41,24 +41,8 @@ class AppRequirement(cmd2.CommandSet):
 		self._cmd.pfeedback(f"Adding a requirement to {AppEnv().db.path} with the code {req.code} and the name {args.name}")
 		AppEnv().gui_refresh()
 
-	_list_parser = cmd2.Cmd2ArgumentParser()
-	_list_parser.add_argument("--output","-o", default=None, type=str, help="Output in script format")
-	@cmd2.as_subcommand_to("list", "requirement",  _list_parser, help="List all requirement")
-	def requirement_list(self,args):
-		self._print_str = ""
-		self._output_str = ""
 
-		base = AppEnv().db.get_root_requirements()
 
-		self._cmd.poutput(f"Project : {AppEnv().db.path}")
-		for req in sorted(base,key=lambda x : x.code) :
-			self.print_level(req)
-
-		self._cmd.poutput(self._print_str)
-		if args.output is not None :
-			print(f"Dumping in {os.path.abspath(args.output)}")
-			with open(args.output,"w") as f :
-				f.write(self._output_str)
 
 	_rm_parser = cmd2.Cmd2ArgumentParser()
 	_rm_parser.add_argument("code",type=str, help="Requirement code to use", choices=AppEnv().requirement_codes)
@@ -94,18 +78,46 @@ class AppRequirement(cmd2.CommandSet):
 		self._cmd.pfeedback(f"I'm editing the requirement of {AppEnv().db.name} with the code {args.code} and the name {args.name}")
 		AppEnv().gui_refresh()
 
-	def print_level(self,req : Requirement, level = 0):
+
+	_list_parser = cmd2.Cmd2ArgumentParser()
+	_list_parser.add_argument("--output","-o", default=None, type=str, help="Output in script format")
+	@cmd2.as_subcommand_to("list", "requirement",  _list_parser, help="List all requirement")
+	def requirement_list(self,args):
+		self._print_str = ""
+		self._output_str = ""
+
+		base = AppEnv().db.get_root_requirements()
+
+		if not args.one_per_line :
+			self._cmd.poutput(f"Project : {AppEnv().db.path}")
+		for req in sorted(base,key=lambda x : x.code) :
+			self.print_level(req,simple=args.one_per_line)
+
+		self._print_str = self._print_str[:-1]
+		self._cmd.poutput(self._print_str)
+
+		if args.output is not None :
+			if not args.one_per_line :
+				self._cmd.pfeedback(f"Dumping in {os.path.abspath(args.output)}")
+			with open(args.output,"w") as f :
+				f.write(self._output_str)
+
+	def print_level(self,req : Requirement, level = 0, simple = False):
 		self._output_str += f'add requirement "{req.code}" -f'
 		if req.name is not None : self._output_str += f' -n "{req.name}"'
 		if req.parent is not None : self._output_str += f' -p "{req.parent.code}"'
 		if req.descr is not None : self._output_str += f' -d "{req.descr}"'
 		self._output_str += "\n"
 
-		descr = "" if req.descr is None else req.descr
-		qual_name = f"{req.code} : {req.name}"
-		self._print_str += f"{'':>{2*level:d}s}- {qual_name:.<{50-2*level:d}s} {descr}\n"
-		for constr in sorted(req.constraints, key=lambda x: x.code) :
-			self._print_str += f"{'':>{2 * (level+1):d}s}- Impact {constr.code}\n"
+		if simple :
+			self._print_str += f"{req.code}\n"
+		else :
+			descr = "" if req.descr is None else req.descr
+			qual_name = f"{req.code} : {req.name}"
+
+			self._print_str += f"{'':>{2*level:d}s}- {qual_name:.<{50-2*level:d}s} {descr}\n"
+			for constr in sorted(req.constraints, key=lambda x: x.code) :
+				self._print_str += f"{'':>{2 * (level+1):d}s}- Impact {constr.code}\n"
 
 		for sreq in sorted(req._children,key= lambda x : x.code) :
-			self.print_level(sreq,level + 1)
+			self.print_level(sreq,level + 1,simple)

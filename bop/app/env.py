@@ -1,4 +1,5 @@
 from queue import Queue
+from threading import Semaphore
 
 
 class Singleton(type):
@@ -18,15 +19,18 @@ class AppEnv(metaclass=Singleton):
 		self.db : DB = None
 		self.prj : Project = None
 		self.is_gui_up = False
+		self.gui_queue_lock = Semaphore()
 		self.gui_control_queue = Queue()
 		self.requirement_codes = list()
 		self.product_codes = list()
 		self.constraint_codes = list()
+		self.maturity_codes = list()
 
 	def refresh_caches(self):
 		self.refresh_requirement_codes()
 		self.refresh_product_codes()
 		self.refresh_constraint_codes()
+		self.refresh_maturity_codes()
 
 	def refresh_requirement_codes(self):
 		self.requirement_codes.clear()
@@ -61,6 +65,19 @@ class AppEnv(metaclass=Singleton):
 	def uncache_constraint_codes(self, code):
 		self.constraint_codes.remove(code)
 
+	def refresh_maturity_codes(self):
+		self.maturity_codes.clear()
+		for mat in self.db.maturity_codes :
+			self.cache_maturity_codes(mat)
+
+	def cache_maturity_codes(self, code):
+		self.maturity_codes.append(code)
+
+	def uncache_maturity_codes(self, code):
+		self.constraint_codes.remove(code)
+
+
 	def gui_refresh(self):
 		if self.is_gui_up :
-			self.gui_control_queue.put_nowait("refresh")
+			with self.gui_queue_lock :
+				self.gui_control_queue.put_nowait("refresh")

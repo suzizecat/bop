@@ -5,6 +5,7 @@ import typing as T
 from bop.db.data import Requirement
 from bop.db.data import Product
 from bop.db.data import Constraint
+from bop.db.data import Maturity
 
 
 class DB:
@@ -23,6 +24,9 @@ class DB:
 
 		"""Constraints by SQL id"""
 		self._constraints: T.Dict[int, Constraint] = dict()
+
+		"""Maturity by SQL id"""
+		self._maturity: T.Dict[int,Maturity] = dict()
 
 		self.create()
 
@@ -51,6 +55,10 @@ class DB:
 		return [x.code for x in self._constraints.values()]
 
 	@property
+	def maturity_codes(self):
+		return [x.code for x in self._maturity.values()]
+
+	@property
 	def name(self):
 		return os.path.basename(self.path)
 
@@ -61,6 +69,7 @@ class DB:
 				sql.executescript(script.read())
 
 	def read_db(self):
+		self.read_maturity()
 		self.read_requirements()
 		self.read_products()
 		self.read_constraints()
@@ -69,6 +78,7 @@ class DB:
 		self.read_constraint_requirement_bindings()
 
 	def save_db(self):
+		self.save_maturity()
 		self.save_requirements()
 		self.save_products()
 		self.save_constraints()
@@ -93,6 +103,10 @@ class DB:
 		self.populate_constraints()
 		self.validate_constraints()
 
+	def read_maturity(self):
+		self.clear_maturity()
+		self.populate_maturity()
+
 	def add_element(self,elt, ignore_duplicate = False):
 		if isinstance(elt,Requirement) :
 			self.add_requirement(elt,ignore_duplicate)
@@ -100,8 +114,64 @@ class DB:
 			self.add_product(elt, ignore_duplicate)
 		elif isinstance(elt, Constraint) :
 			self.add_constraint(elt, ignore_duplicate)
+		elif isinstance(elt,Maturity) :
+			self.add_maturity(elt,ignore_duplicate)
 		else :
 			TypeError(f"Invalid element type {type(elt).__name__}")
+
+	### Maturity
+	def clear_maturity(self):
+		self._maturity.clear()
+
+	def populate_maturity(self):
+		with self as sql:
+			results = sql.execute("SELECT * FROM t_maturity")
+			for row in results:
+				self.add_maturity(Maturity.from_sql_row(row))
+
+	def add_maturity(self, mat : Maturity, ignore_duplicate = False):
+		with self as sql :
+			if mat._id is None :
+				try :
+					sql.execute("INSERT INTO t_maturity(level, code) VALUES (:level, :code)", mat.to_sql_dict())
+				except Exception as e:
+					print(f"An exception occured : {e!s}")
+					if not ignore_duplicate :
+						raise e
+				else :
+					mat._id = sql.lastrowid
+			self._maturity[mat._id] = mat
+
+	def save_maturity(self):
+		to_update = list()
+
+		for mat in self._maturity.values() :
+			to_update.append(mat.to_sql_dict())
+
+		with self as sql :
+			sql.executemany("UPDATE t_maturity SET level=:level, code=:code WHERE id=:id",to_update)
+
+	def remove_maturity(self, mat: T.Union[Maturity, str, int]):
+		if isinstance(mat,int) :
+			self.remove_maturity(self._maturity[mat])
+		elif isinstance(mat,str) :
+			for m in self._maturity.values() :
+				if m.code == mat :
+					self.remove_maturity(m)
+					break
+				else :
+					raise KeyError(f"Maturity code {mat} not found/ ")
+		elif isinstance(mat,Maturity) :
+			for req in self._requirements.values() :
+				req.unset_maturity(mat)
+			with self as sql :
+				sql.execute("DELETE FROM t_maturity WHERE id=:id",mat.to_sql_dict())
+
+	def get_maturity_by_code(self, code) -> Constraint:
+			for mat in self._maturity.values():
+				if mat.code == code:
+					return mat
+			raise KeyError(f"No maturity level found with code {code}")
 
 	### Requirements
 
@@ -120,6 +190,8 @@ class DB:
 
 	def resolve_requirements(self):
 		for req in self._requirements.values() :
+			if req.maturity is not None and not isinstance(req.maturity,Maturity):
+				req.maturity = self._maturity[req.maturity]
 			if not req.resolved :
 				req.parent = self._requirements[req._parent_id]
 
@@ -160,7 +232,6 @@ class DB:
 				self._requirements.pop(req.id)
 		else :
 			raise KeyError(f"Trying to remove an invalid requirement {req!r} not found.")
-
 
 	def save_requirements(self):
 		to_update = list()
@@ -268,8 +339,7 @@ class DB:
 					ret.append(prod)
 			return ret
 
-	### Constraints
-
+	# ------ Constraints
 	def clear_constraints(self):
 		self._constraints.clear()
 
@@ -283,12 +353,12 @@ class DB:
 			for row in results:
 				self.add_constraint(Constraint.from_sql_row(row))
 
-
 	def get_constraint_by_code(self, code) -> Constraint:
 			for constr in self._constraints.values():
 				if constr.code == code:
 					return constr
 			raise KeyError(f"No constraint found with code {code}")
+
 	def remove_constraint(self, constraint : T.Union[Constraint, str, int]):
 		if isinstance(constraint, str):
 			constraint = self.get_constraint_by_code(constraint)

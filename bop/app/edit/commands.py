@@ -61,10 +61,12 @@ class EditCommands(BaseBopCommandSet) :
 		"""Manage requirements."""
 		self._default_subcommand_stub("unbind", ns)
 
-	@with_argparser(_base_subcommand_parser())
-	def do_list(self, ns: argparse.Namespace):
-		"""Manage requirements."""
-		self._default_subcommand_stub("list", ns)
+
+
+	def do_save(self, _):
+		"""Save the SQL database"""
+		AppEnv().db.save_db()
+		self._cmd.pfeedback("Database successfully saved.")
 
 @with_default_category("Database Analysis")
 class AnalyzeCommands(BaseBopCommandSet) :
@@ -75,3 +77,10 @@ class AnalyzeCommands(BaseBopCommandSet) :
 	def do_analyze(self, ns: argparse.Namespace):
 		"""Manage requirements."""
 		self._default_subcommand_stub("analyze",ns)
+
+	_list_argparse = _base_subcommand_parser()
+	_list_argparse.add_argument("--one-per-line","-1",action="store_true", help="Display only one code per line")
+	@with_argparser(_list_argparse)
+	def do_list(self, ns: argparse.Namespace):
+		"""Manage requirements."""
+		self._default_subcommand_stub("list", ns)

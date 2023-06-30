@@ -41,7 +41,7 @@ class BopEntry:
 		if len(args_list) == 0 :
 			args_list = ["help"]
 		command = " ".join(args_list)
-		print("Running command ", command)
+		#print("Running command ", command)
 		try :
 			self.session.onecmd(command)
 		except cmd2.exceptions.Cmd2ArgparseError :
