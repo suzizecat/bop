@@ -7,6 +7,7 @@ from bop.gui.widget.hierarchy_tree import HierarchyTree
 from .show_impact import BopShowImpactWindow
 from bop.app.env import AppEnv
 
+from bop.gui.window.edit_requirement import BopEditRequirementWindow
 
 class BopMainWindowThread(Thread):
 	def run(self):
@@ -25,7 +26,7 @@ class BopMainWindow(Tk) :
 		super().__init__()
 		self.geometry("900x600")
 		self.title("BOP")
-
+		self.event_queue_semaphore = Semaphore()
 		self.setup()
 
 	def setup(self):
@@ -44,7 +45,7 @@ class BopMainWindow(Tk) :
 		self.columnconfigure(1,weight=1)
 		self.rowconfigure(0,weight=1)
 
-		self.event_queue_semaphore = Semaphore()
+
 
 		# Mandatory to properly finish, avoid restarting the _poll_request_queue.
 		self.protocol("WM_DELETE_WINDOW", self.close)
@@ -57,6 +58,7 @@ class BopMainWindow(Tk) :
 	def setup_menu(self):
 		tree_right_click_menu = Menu(self,tearoff=0)
 		tree_right_click_menu.add_command(label="Impact", command=lambda : self.do_show_impact(self.tree.selected_element))
+		tree_right_click_menu.add_command(label="Edit", command=lambda : self.do_edit_requirement(self.tree.selected_element))
 		def do_popup(event):
 			try:
 				y_position = self.winfo_pointery() - self.tree.winfo_rooty()
@@ -68,6 +70,7 @@ class BopMainWindow(Tk) :
 				tree_right_click_menu.grab_release()
 
 		self.tree.bind("<Button-3>",do_popup)
+		self.tree.bind("<Double-Button-1>",lambda _ : self.do_edit_requirement(self.tree.selected_element))
 
 	def close(self):
 		with AppEnv().gui_queue_lock:
@@ -84,6 +87,8 @@ class BopMainWindow(Tk) :
 						# Flush the control queue
 						while not AppEnv().gui_control_queue.empty() :
 							AppEnv().gui_control_queue.get_nowait()
+						with AppEnv().cmd_queue_lock :
+							AppEnv().cmd_control_queue.put_nowait("exit")
 						self.destroy()
 			except Empty:
 				pass
@@ -99,5 +104,8 @@ class BopMainWindow(Tk) :
 	def do_show_impact(self,elt):
 		win = BopShowImpactWindow(elt, master=None)
 
+	def do_edit_requirement(self, elt):
+		win = BopEditRequirementWindow(None,elt)
+		del win
 
 

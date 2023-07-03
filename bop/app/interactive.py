@@ -16,7 +16,9 @@ from .analyze.app_analyze import AppAnalyze
 from bop.gui.window import BopMainWindow,BopMainWindowThread
 from .env import AppEnv
 
-from threading import Thread
+from threading import Thread, Semaphore
+from queue import Empty
+from time import sleep
 
 
 class Interactive(cmd2.Cmd):
@@ -28,8 +30,44 @@ class Interactive(cmd2.Cmd):
 
 		self.intro = f"Welcome to the Build Objects Properly (BOP) tool.\n"
 		self.gui_thread : BopMainWindowThread = None
+		self.monitor_thread : BopMainWindowThread = None
 
 		self.register_postloop_hook(self._ensure_gui_cleanup)
+		self.register_precmd_hook(self._get_command_lock)
+		self.register_cmdfinalization_hook(self._release_command_lock)
+
+		self._cmd_lock = Semaphore()
+
+	def _start_monitor_thread(self):
+		def monitor():
+			while True:
+				sleep(0.1)
+				with AppEnv().cmd_queue_lock :
+					try :
+						while True:
+							elt = AppEnv().cmd_control_queue.get(block=False)
+							if elt == "exit" :
+								while not AppEnv().cmd_control_queue.empty() :
+									AppEnv().cmd_control_queue.get_nowait()
+								return
+							print(elt)
+							self.onecmd_plus_hooks(elt,add_to_history=False)
+							print(self.prompt,end="")
+					except Empty:
+						pass
+
+		if self.monitor_thread is None or not self.monitor_thread.is_alive() :
+			self.monitor_thread = Thread(target=monitor)
+			self.monitor_thread.start()
+
+	def _get_command_lock(self, _ : cmd2.plugin.PrecommandData) -> cmd2.plugin.PrecommandData:
+		self._cmd_lock.acquire()
+		return _
+
+	def _release_command_lock(self, _ : cmd2.plugin.CommandFinalizationData) -> cmd2.plugin.CommandFinalizationData:
+		self._cmd_lock.release()
+		return _
+
 	def _ensure_gui_cleanup(self) -> None:
 		if self.gui_thread is not None and self.gui_thread.is_alive():
 			self.poutput("Cleanup the GUI")
@@ -51,8 +89,10 @@ class Interactive(cmd2.Cmd):
 			root.mainloop()
 
 		self.poutput("Starting BOP GUI.")
+		self._start_monitor_thread()
 		self.gui_thread = BopMainWindowThread()
 		self.gui_thread.start()
+
 
 
 
