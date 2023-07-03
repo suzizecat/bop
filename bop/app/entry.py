@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import cmd2.exceptions
 
@@ -8,27 +7,28 @@ from .env import AppEnv
 from bop.db import DB
 from bop.db import Project
 
+
 class BopEntry:
 	def __init__(self):
 		self.parser = argparse.ArgumentParser(add_help=False)
-		self.parser.add_argument("--db", type=str, default="project.db" )
+		self.parser.add_argument("--db", type=str, default="project.db")
 
 		self.session = Interactive()
 
-	def start_app(self, argv = None):
+	def start_app(self, argv=None):
 		args, remaining = self.parser.parse_known_args(argv)
 		self.set_env_from_args(args)
 
 		if "interactive" in remaining or len(remaining) == 0:
 			self.session.update_prompt()
 			self.session.cmdloop()
-		else :
+		else:
 			self.session.settables["quiet"].set_value(True)
 			self.run_sub_apps(remaining)
 
 		AppEnv().db.save_db()
 
-	def set_env_from_args(self,args):
+	def set_env_from_args(self, args):
 		AppEnv().db = DB(args.db)
 		AppEnv().db.read_db()
 		AppEnv().refresh_caches()
@@ -48,5 +48,3 @@ class BopEntry:
 			# Ignore argument parsing error raised as messages should have been appropriately been displayed anyway.
 			# Allows a proper management of the --help flags
 			pass
-
-
